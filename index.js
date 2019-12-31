@@ -6,11 +6,13 @@ const LaunchRequestHandler = {
   canHandle(handlerInput) {
     return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
   },
-  handle(handlerInput) {
-    const speakOutput = 'Say Blood Sugar or level.';
+  async handle(handlerInput) {
+    const { firstReading } = await getData();
+    const { Value, Trend } = firstReading || {};
+    const speakOutput = `You are at ${Value}, going ${getTrendName(Trend)}`;
     return handlerInput.responseBuilder
       .speak(speakOutput)
-      .reprompt(speakOutput)
+    // .reprompt('add a reprompt if you want to keep the session open for the user to respond')
       .getResponse();
   },
 };

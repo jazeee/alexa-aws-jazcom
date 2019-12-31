@@ -1,10 +1,14 @@
 const fetch = require('node-fetch');
+const S3 = require('aws-sdk/clients/s3');
 const { urls } = require('./urls');
-// const AWS = require('aws-sdk'); // eslint-disable-line import/no-extraneous-dependencies
 
-const getKey = async (keyName) => new Promise((resolve, reject) => {
-  const { [keyName]: key } = process.env;
-  return key ? resolve(key) : reject(new Error(`No environment variable found. Expect "${keyName}"`));
+const getKeys = async () => new Promise((resolve, reject) => {
+  new S3().getObject({ Bucket: 'jazcom-data', Key: 'dx-2/data.json' }, (error, data) => {
+    if (error) {
+      return reject(error);
+    }
+    return resolve(JSON.parse(data.Body.toString()));
+  });
 });
 
 exports.getData = async () => {
@@ -12,14 +16,15 @@ exports.getData = async () => {
   let authKey = null;
   const { auth: authReq, data: dataReq } = urls;
   if (!authKey) {
+    const keys = await getKeys();
     const postResult = await fetch(authReq.url, {
       method: authReq.method || 'POST',
       mode: 'cors',
       headers: authReq.headers,
       body: authReq.method !== 'GET' ? JSON.stringify({
         ...authReq.bodyBase,
-        accountName: await getKey('JAZ_COM_USER'),
-        password: await getKey('JAZ_COM_KEY'),
+        accountName: keys.JAZ_COM_USER,
+        password: `jaz${keys.JAZ_COM_KEY}`,
       }) : undefined,
     });
     const { status } = postResult;
